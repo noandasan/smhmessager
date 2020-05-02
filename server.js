@@ -11,11 +11,11 @@ app.get("/", (res, req) => {
     req.send("fds");
 })
 
-app.get("/privacy", (res, req) => {
+app.get("/privacy/", (res, req) => {
     req.send("fds");
 })
 
-app.get("/terms", (res, req) => {
+app.get("/terms/", (res, req) => {
     req.send("fds");
 })
 
