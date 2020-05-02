@@ -11,6 +11,14 @@ app.get("/", (res, req) => {
     req.send("fds");
 })
 
+app.get("/privacy", (res, req) => {
+    req.send("fds");
+})
+
+app.get("/terms", (res, req) => {
+    req.send("fds");
+})
+
 app.get('/webhook/', function(req, res) {
     if (req.query['hub.verify_token'] === 'bong') {
         res.send(req.query['hub.challenge'])
