@@ -16,7 +16,7 @@ app.get("/privacy/", (res, req) => {
 })
 
 app.get("/terms/", (res, req) => {
-    req.send("fds");
+    req.send("bongbong");
 })
 
 app.get('/webhook/', function(req, res) {
