@@ -12,7 +12,7 @@ app.get("/", (res, req) => {
 })
 
 app.get("/privacy/", (res, req) => {
-    req.send("fds");
+    req.send("privacy");
 })
 
 app.get("/terms/", (res, req) => {
