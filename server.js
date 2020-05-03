@@ -14,7 +14,7 @@ app.use(bodyParser.urlencoded({
 }));
 
 let FACEBOOK_VERIFY_TOKEN = "any_password";
-let FACEBOOK_PAGE_ACCESS_TOKEN = "EAAJkaiWYIfYBACf0YbIDToUXQYrKBE0KEwAHhtKTZBn95AO0W0Lalwu3oRvPUjp40N5sVWjDCx5qEpQYFtZC2DSgeX4i0kQ0ZBnrZBlrumRbOdZA1YpZCZBQDxuFgMRWSPpjH3A73bsuT5ZCnylCwhEdg0eV6xSiLBFlEZBcZCQsdjzwZDZD";
+let FACEBOOK_PAGE_ACCESS_TOKEN = "EAAJkaiWYIfYBAApcIzdytc4xJ1li2z2ac15ziohs6zCtflTO0Ka6ZAkku4iNksyCOTFQYveZC9sI9yyj6goEOsFkzKJ7LHr4pblsJZB14ZAOnn7Xr3jPl8Qh6UPZB2SrsZB8pCYKnou8OBWjBUyzFUxZCvFREyGIpet5AkjNvEXkAZDZD";
 let FACEBOOK_SEND_MESSAGE_URL = 'https://graph.facebook.com/v2.6/me/messages?access_token=' + FACEBOOK_PAGE_ACCESS_TOKEN;
 let LAST_FM_URL = 'https://www.last.fm/music/';
 
