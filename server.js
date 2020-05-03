@@ -42,17 +42,17 @@ app.post('/webhook', function(req, res) {
                     entry.messaging.forEach(function(messagingObject) {
                         var senderId = messagingObject.sender.id;
                         if (messagingObject.message) {
-                            console.log(messagingObject.message);
+                            res.send(messagingObject.message);
                         } else if (messagingObject.postback) {
-                            console.log('Recieved postback');
+                            res.send('Recieved postback');
                         }
                     });
                 } else {
-                    console.log('no message key found');
+                    res.send('no message key found');
                 }
             });
         } else {
-            console.log('no entry key found');
+            res.send('no entry key found');
         }
     } else {
 
