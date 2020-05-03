@@ -1,68 +1,202 @@
-'use strict';
+var express = require('express');
+var app = express();
+var bodyParser = require('body-parser');
+var request = require('request');
+var path = require('path');
 
-// Imports dependencies and set up http server
-const
-    express = require('express'),
-    bodyParser = require('body-parser'),
-    app = express().use(bodyParser.json()); // creates express http server
 
-// Sets server port and logs message on success
-app.listen(process.env.PORT || 5000, () => console.log('webhook is listening'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({
+    extended: false
+}));
 
-app.get('/bong', (req, res) => {
-    res.send("bong");
-});
+let FACEBOOK_VERIFY_TOKEN = "any_password";
+let FACEBOOK_PAGE_ACCESS_TOKEN = "EAAJkaiWYIfYBAPRlQkhicol0nGNtbyWvcxudI4W3V7jvMwyrO5AqBhV1ZClZBwhxDkJVx1fPw1m1HFCWj7KtCnBS3XKPiwo9Xj77Fz7Fy6RsgjRuK6ww2CpKC6t6ZAbtbKgcgFwrAaaOxUCLck0kr5iZCqqhsZBVP2oq7uwFwhQZDZD";
+let FACEBOOK_SEND_MESSAGE_URL = 'https://graph.facebook.com/v2.6/me/messages?access_token=' + FACEBOOK_PAGE_ACCESS_TOKEN;
+let LAST_FM_URL = 'https://www.last.fm/music/';
 
-// Creates the endpoint for our webhook 
-app.post('/webhook', (req, res) => {
+app.set('port', (process.env.PORT || 5000));
 
-    let body = req.body;
+app.use(express.static(__dirname + '/public'));
 
-    // Checks this is an event from a page subscription
-    if (body.object === 'page') {
+// views is directory for all template files
+app.set('views', __dirname + '/views');
+app.set('view engine', 'ejs');
 
-        // Iterates over each entry - there may be multiple if batched
-        body.entry.forEach(function(entry) {
-
-            // Gets the message. entry.messaging is an array, but 
-            // will only ever contain one message, so we get index 0
-            let webhook_event = entry.messaging[0];
-            console.log(webhook_event);
-        });
-
-        // Returns a '200 OK' response to all requests
-        res.status(200).send('EVENT_RECEIVED');
-    } else {
-        // Returns a '404 Not Found' if event is not from a page subscription
-        res.sendStatus(404);
+app.get('/webhook/', function(request, response) {
+    if (request.query['hub.verify_token'] == FACEBOOK_VERIFY_TOKEN) {
+        response.send(request.query['hub.challenge'])
     }
-
+    res.send('Error, wrong token')
 });
 
-// Adds support for GET requests to our webhook
-app.get('/webhook', (req, res) => {
+app.get('/privacy', function(req, res) {
+    res.sendFile(path.join(__dirname, 'views', 'pages', 'privacy.html'));
+});
 
-    // Your verify token. Should be a random string.
-    let VERIFY_TOKEN = "EAAJkaiWYIfYBAHMEhMrD7qLd3oKkuHLITKlSvE8Bzqr31qTdfz2JmsQLvwAXS103AcFWFADdna8mqlEWbrzCZCFZAjcHpCnLKOnTfrL4Tudx60Ncz1zI1ZCFTl9T7bZC1VV0maZAmDDlusxcs0gJTkd7BmmqtAZCHEJP56wZAZAVcwZDZD"
+app.post('/webhook', function(req, res) {
+    if (req.body.object === 'page') {
+        if (req.body.entry) {
+            req.body.entry.forEach(function(entry) {
+                if (entry.messaging) {
+                    entry.messaging.forEach(function(messagingObject) {
+                        var senderId = messagingObject.sender.id;
+                        if (messagingObject.message) {
+                            var musicName = messagingObject.message.text;
+                            fetchData(senderId, musicName);
+                        } else if (messagingObject.postback) {
+                            console.log('Recieved postback');
 
-    // Parse the query params
-    let mode = req.query['hub.mode'];
-    let token = req.query['hub.verify_token'];
-    let challenge = req.query['hub.challenge'];
-
-    // Checks if a token and mode is in the query string of the request
-    if (mode && token) {
-
-        // Checks the mode and token sent is correct
-        if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-
-            // Responds with the challenge token from the request
-            console.log('WEBHOOK_VERIFIED');
-            res.status(200).send(challenge);
-
+                        }
+                    });
+                } else {
+                    console.log('no message key found');
+                }
+            });
         } else {
-            // Responds with '403 Forbidden' if verify tokens do not match
-            res.sendStatus(403);
+            console.log('no entry key found');
         }
+    } else {
+
     }
+    res.status(200).send();
+});
+
+function sendMessageToUser(senderId, message) {
+    request({
+        url: FACEBOOK_SEND_MESSAGE_URL,
+        method: 'POST',
+        json: {
+            "recipient": {
+                "id": senderId
+            },
+            "message": {
+                "text": message
+            }
+        }
+
+    }, function(error, response, body) {
+        if (error) {
+            console.log('Error sending UIMESSAGE to User ' + JSON.stringify(error));
+        } else if (response.body.error) {
+            console.log('Error sending UImessage' + JSON.stringify(response.body.error));
+        }
+    });
+}
+
+// function fetchData(senderId, musicName) {
+//     showTypingIndicatorToUser(senderId, true);
+//     var opts = {
+//         q: musicName
+//     };
+//     lastfm.trackSearch(opts, (err, data) => {
+//         showTypingIndicatorToUser(senderId, false);
+//         if (err) {
+//             console.error(err)
+//         } else {
+//             fetchingData(senderId, data);
+//         }
+//     });
+// }
+
+function fetchingData(senderId, body) {
+    var elements = [];
+    if (body.result) {
+        if (body.result.length > 0) {
+            console.log('under result');
+            var lengthOfResult = body.result.length > 10 ? 10 : body.result.length;
+            for (i = 0; i < lengthOfResult; i++) {
+                elements.push(formingElements(body.result[i]));
+            }
+            sendTemplateResponse(senderId, elements);
+        } else {
+            sendMessageToUser(senderId, 'Couldn\'t find info');
+        }
+
+    }
+}
+
+function formingElements(result) {
+    var musicName = result.name;
+    var artistName = result.artistName;
+    var posterPath;
+
+    if (result.images.length == 0 || result.images == undefined) {
+        posterPath = 'https://images.pexels.com/photos/3104/black-and-white-music-headphones-life.jpg?h=350&auto=compress&cs=tinysrgb';
+    } else {
+        posterPath = result.images[2];
+    }
+
+    var musicNameArray = musicName.split(' ');
+    var artistNameArray = artistName.split(' ');
+    var musicNameUrl = musicNameArray.join('+');
+    var artistNameUrl = artistNameArray.join('+');
+
+    return {
+        title: musicName,
+        subtitle: artistName,
+        image_url: posterPath,
+        buttons: [{
+            "type": "web_url",
+            "url": LAST_FM_URL + artistNameUrl + '/_/' + musicNameUrl,
+            "title": "More Details"
+        }]
+    }
+}
+
+function sendTemplateResponse(senderId, elementList) {
+    request({
+        url: FACEBOOK_SEND_MESSAGE_URL,
+        method: 'POST',
+        json: {
+            recipient: {
+                id: senderId
+            },
+            message: {
+                attachment: {
+                    type: 'template',
+                    payload: {
+                        template_type: 'generic',
+                        elements: elementList
+
+
+                    }
+                }
+            }
+
+        }
+    }, function(error, response, body) {
+        if (error) {
+            console.log('Error sending UIMESSAGE to User ' + error.toString());
+        } else if (response.body.error) {
+            console.log('Error sending UImessage under sendTemplateResponse' + JSON.stringify(response.body.error));
+        }
+        //ignore
+    });
+}
+
+function showTypingIndicatorToUser(senderId, isTyping) {
+    var senderAction = isTyping ? 'typing_on' : 'typing_off';
+    request({
+        url: FACEBOOK_SEND_MESSAGE_URL,
+        method: 'POST',
+        json: {
+            recipient: {
+                id: senderId
+            },
+            sender_action: senderAction
+        }
+
+    }, function(error, response, body) {
+        if (error) {
+            console.log('sending Typing indicator to user ' + error);
+        } else if (response.body.error) {
+            console.log('Error sending typing indicator' + response.body.error);
+        }
+    });
+
+}
+
+app.listen(app.get('port'), function() {
+    console.log('Node app is running on port', app.get('port'));
 });
