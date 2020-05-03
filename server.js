@@ -42,11 +42,9 @@ app.post('/webhook', function(req, res) {
                     entry.messaging.forEach(function(messagingObject) {
                         var senderId = messagingObject.sender.id;
                         if (messagingObject.message) {
-                            var musicName = messagingObject.message.text;
-                            fetchData(senderId, musicName);
+                            console.log(messagingObject.message);
                         } else if (messagingObject.postback) {
                             console.log('Recieved postback');
-
                         }
                     });
                 } else {
